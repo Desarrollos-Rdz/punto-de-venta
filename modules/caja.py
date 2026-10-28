@@ -1,6 +1,7 @@
 """Turnos de caja: apertura, movimientos y corte."""
 import pandas as pd
 from utils.db import get_db
+from utils.tiempo import serie_local
 
 
 def turno_abierto(usuario_id: str) -> dict | None:
@@ -59,7 +60,10 @@ def cerrar_turno(turno_id: str, efectivo_contado: float, notas: str | None) -> N
 def movimientos_del_turno(turno_id: str) -> pd.DataFrame:
     filas = (get_db().table("movimientos_caja").select("creado_en, tipo, monto, concepto")
              .eq("turno_id", turno_id).order("creado_en", desc=True).execute().data)
-    return pd.DataFrame(filas)
+    df = pd.DataFrame(filas)
+    if not df.empty:
+        df["creado_en"] = serie_local(df["creado_en"])
+    return df
 
 
 def ventas_del_turno(turno_id: str) -> pd.DataFrame:
@@ -69,6 +73,7 @@ def ventas_del_turno(turno_id: str) -> pd.DataFrame:
     df = pd.DataFrame(filas)
     if df.empty:
         return df
+    df["creado_en"] = serie_local(df["creado_en"])
     df["pago"] = df["pagos"].apply(lambda ps: " + ".join(sorted({p["metodo"] for p in ps})))
     df["total"] = df["total"].astype(float)
     return df.drop(columns=["pagos"])
@@ -82,4 +87,6 @@ def historial_turnos(limite: int = 30) -> pd.DataFrame:
     if df.empty:
         return df
     df["cajero"] = df["usuarios"].apply(lambda u: u["nombre"] if u else "")
+    df["abierto_en"] = serie_local(df["abierto_en"])
+    df["cerrado_en"] = serie_local(df["cerrado_en"])
     return df.drop(columns=["usuarios"])

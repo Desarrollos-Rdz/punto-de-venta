@@ -79,3 +79,56 @@ def corte_pdf(resumen: dict, cajero: str, efectivo_contado: float | None,
     fila("Ventas canceladas", str(resumen["num_canceladas"]))
     fila("Utilidad estimada", f"${resumen['utilidad']:,.2f}")
     return bytes(pdf.output())
+
+
+def reporte_pdf(rango: str, res: dict, dias: pd.DataFrame, prods: pd.DataFrame,
+                cajeros: pd.DataFrame, tienda: str = "Mi Tienda") -> bytes:
+    pdf = FPDF(format="A4")
+    pdf.set_auto_page_break(auto=True, margin=12)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 9, _txt(f"Reporte de ventas - {tienda}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, _txt(f"Periodo: {rango}"), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(3)
+
+    def fila(a, b, bold=False):
+        pdf.set_font("Helvetica", "B" if bold else "", 10)
+        pdf.cell(110, 7, _txt(a), border="B")
+        pdf.cell(60, 7, _txt(b), border="B", align="R", new_x="LMARGIN", new_y="NEXT")
+
+    fila("Total vendido", f"${res['total']:,.2f}", True)
+    fila("Numero de ventas", str(res["num_ventas"]))
+    fila("Ticket promedio", f"${res['ticket_promedio']:,.2f}")
+    fila("Efectivo", f"${res['efectivo']:,.2f}")
+    fila("Tarjeta", f"${res['tarjeta']:,.2f}")
+    fila("Utilidad estimada", f"${res['utilidad']:,.2f}", True)
+    fila("Ventas canceladas", str(res["canceladas"]))
+
+    def tabla(titulo, df, cols):
+        if df.empty:
+            return
+        pdf.ln(5)
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 7, _txt(titulo), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_fill_color(253, 235, 211)
+        pdf.set_font("Helvetica", "B", 9)
+        for nombre, ancho, _ in cols:
+            pdf.cell(ancho, 6, nombre, border=1, fill=True)
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for _, r in df.iterrows():
+            for _, ancho, f in cols:
+                pdf.cell(ancho, 6, _txt(f(r))[: int(ancho / 1.9)], border=1)
+            pdf.ln()
+
+    tabla("Ventas por dia", dias, [("Fecha", 45, lambda r: f"{r['fecha']:%d/%m/%Y}"),
+                                   ("Ventas", 30, lambda r: str(int(r["ventas"]))),
+                                   ("Total", 40, lambda r: f"${r['total']:,.2f}")])
+    tabla("Productos mas vendidos", prods.head(20), [
+        ("Producto", 85, lambda r: r["producto"]), ("Cantidad", 28, lambda r: f"{r['cantidad']:g}"),
+        ("Importe", 35, lambda r: f"${r['importe']:,.2f}"), ("Utilidad", 35, lambda r: f"${r['utilidad']:,.2f}")])
+    tabla("Por cajero", cajeros, [("Cajero", 85, lambda r: r["cajero"]),
+                                  ("Ventas", 28, lambda r: str(int(r["ventas"]))),
+                                  ("Total", 40, lambda r: f"${r['total']:,.2f}")])
+    return bytes(pdf.output())

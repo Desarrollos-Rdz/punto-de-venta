@@ -2,6 +2,7 @@
 from decimal import Decimal
 import pandas as pd
 from utils.db import get_db
+from utils.tiempo import serie_local
 
 
 def listar_categorias() -> list[dict]:
@@ -80,4 +81,5 @@ def listar_movimientos(limite: int = 200) -> pd.DataFrame:
         return df
     df["producto"] = df["productos"].apply(lambda p: p["nombre"] if p else "")
     df["usuario"] = df["usuarios"].apply(lambda u: u["nombre"] if u else "")
+    df["creado_en"] = serie_local(df["creado_en"])
     return df.drop(columns=["productos", "usuarios"])

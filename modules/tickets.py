@@ -3,6 +3,7 @@ import re
 from urllib.parse import quote
 from fpdf import FPDF
 from utils.db import get_db
+from utils.tiempo import a_local
 
 
 def obtener_ticket(venta_id: str) -> dict:
@@ -18,8 +19,8 @@ def _l1(s) -> str:
     return str(s).encode("latin-1", "replace").decode("latin-1")
 
 
-def _fecha(v: dict) -> str:
-    return v["creado_en"][:16].replace("T", " ")
+def _fecha(v: dict, zona: str | None = None) -> str:
+    return a_local(v["creado_en"], zona).strftime("%d/%m/%Y %H:%M")
 
 
 def ticket_texto(t: dict) -> str:
@@ -28,7 +29,7 @@ def ticket_texto(t: dict) -> str:
     lineas = [f"*{tienda['nombre']}*"]
     if tienda.get("direccion"):
         lineas.append(tienda["direccion"])
-    lineas += [f"Ticket #{v['folio']}  {_fecha(v)}", "-" * 28]
+    lineas += [f"Ticket #{v['folio']}  {_fecha(v, tienda.get('zona_horaria'))}", "-" * 28]
     for i in t["items"]:
         lineas.append(f"{i['nombre']}\n  {float(i['cantidad']):g} x ${float(i['precio_unitario']):,.2f} = ${float(i['importe']):,.2f}")
     lineas.append("-" * 28)
@@ -80,7 +81,7 @@ def ticket_pdf(t: dict) -> bytes:
         if tienda.get(campo):
             centrado(tienda[campo], 8)
     pdf.ln(1)
-    centrado(f"Ticket #{v['folio']}   {_fecha(v)}", 8)
+    centrado(f"Ticket #{v['folio']}   {_fecha(v, tienda.get('zona_horaria'))}", 8)
     centrado(f"Atendio: {(v.get('usuarios') or {}).get('nombre', '')}", 8)
     pdf.ln(1)
     pdf.cell(ancho, 0.1, "", border="T", new_x="LMARGIN", new_y="NEXT")

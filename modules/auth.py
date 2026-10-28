@@ -6,9 +6,9 @@ from utils.db import get_db
 # Paginas permitidas por rol (nombres = clave de cada pagina en app.py)
 PERMISOS = {
     "admin":       ["inicio", "pos", "inventario", "caja", "reportes", "usuarios", "configuracion"],
-    "supervisor":  ["inicio", "inventario", "caja", "reportes"],
-    "cajero":      ["inicio", "pos", "caja"],
-    "almacenista": ["inicio", "inventario"],
+    "supervisor":  ["inicio", "inventario", "caja", "reportes", "configuracion"],
+    "cajero":      ["inicio", "pos", "caja", "configuracion"],
+    "almacenista": ["inicio", "inventario", "configuracion"],
 }
 
 ROLES_ETIQUETA = {
