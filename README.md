@@ -9,7 +9,8 @@ Aplicacion web de punto de venta hecha con **Streamlit + Supabase**, pensada par
 | 1 | Esquema de base de datos, login con roles, inventario (costo, precio, margen automatico, peso/pieza, codigo de barras opcional), PDF y CSV de inventario | Listo |
 | 2 | Pantalla de venta (carrito, peso o monto, codigo de barras, efectivo/tarjeta/mixto, cambio) | Listo |
 | 3 | Apertura y corte de caja, retiros e ingresos, PDF del corte | Listo |
-| 4 | Tickets en PDF, envio por correo (Resend) y WhatsApp (enlace wa.me) | Pendiente |
+| 4 | Ticket en PDF (80 mm) y envio por WhatsApp con enlace wa.me | Listo |
+| 4b | Envio de tickets por correo con Resend | En espera: requiere dominio propio verificado |
 | 5 | Usuarios y permisos desde la app, reportes, configuracion de tienda | Pendiente |
 | 6 | Lector de codigo de barras en la pantalla de venta | Pendiente |
 

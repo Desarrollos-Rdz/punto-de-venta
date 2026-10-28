@@ -1,5 +1,5 @@
 import streamlit as st
-from modules import auth, caja, productos, ventas
+from modules import auth, caja, productos, tickets, ventas
 from utils.ui import titulo, mxn
 
 auth.requerir("pos")
@@ -11,6 +11,29 @@ if not turno:
     st.warning("Para vender primero debes abrir tu caja.", icon=":material/lock_open:")
     st.page_link("pages/caja.py", label="Ir a Caja", icon=":material/payments:")
     st.stop()
+
+# ------------------------------------------------------- Ticket de la ultima venta
+if ult := st.session_state.get("ultima_venta"):
+    with st.container(border=True):
+        h1, h2 = st.columns([5, 1], vertical_alignment="center")
+        h1.markdown(f"#### :material/receipt_long: Venta #{ult['folio']} registrada por {mxn(ult['total'])}")
+        if h2.button("Cerrar", icon=":material/close:", key="cerrar_ticket"):
+            st.session_state.pop("ultima_venta")
+            st.rerun()
+        t = tickets.obtener_ticket(ult["venta_id"])
+        b1, b2, b3 = st.columns(3)
+        b1.download_button("Ticket PDF", tickets.ticket_pdf(t), f"ticket_{ult['folio']}.pdf",
+                           "application/pdf", icon=":material/picture_as_pdf:", on_click="ignore",
+                           use_container_width=True)
+        tel = t["venta"].get("cliente_telefono") or ""
+        enlace = tickets.enlace_whatsapp(tel, tickets.ticket_texto(t)) if tel else None
+        if enlace:
+            b2.link_button("Enviar por WhatsApp", enlace, icon=":material/chat:", use_container_width=True)
+        else:
+            b2.button("Enviar por WhatsApp", icon=":material/chat:", disabled=True, use_container_width=True,
+                      help="Captura un telefono de 10 digitos antes de cobrar")
+        b3.button("Enviar por correo", icon=":material/mail:", disabled=True, use_container_width=True,
+                  help="Disponible cuando se configure un dominio de correo")
 
 df = productos.listar_productos()
 if df.empty:
@@ -126,14 +149,15 @@ with der:
                      {"metodo": "tarjeta", "monto": tj}]
 
         with st.expander(":material/mail: Enviar ticket al cliente (opcional)"):
-            email = st.text_input("Correo electronico")
+            email = st.text_input("Correo electronico", help="Se guarda; el envio por correo se activara mas adelante")
             tel = st.text_input("Telefono / WhatsApp (con lada)")
 
         if st.button("Cobrar", type="primary", icon=":material/check_circle:",
                      disabled=not valido or total <= 0, use_container_width=True):
             try:
                 r = ventas.registrar_venta(turno["id"], u["id"], carrito, pagos, descuento, email, tel)
-                st.session_state["ultima_venta"] = {"folio": r["folio"], "total": float(r["total"])}
+                st.session_state["ultima_venta"] = {"venta_id": r["venta_id"], "folio": r["folio"],
+                                                    "total": float(r["total"])}
                 st.session_state["carrito"] = []
                 st.rerun()
             except Exception as e:
@@ -141,6 +165,3 @@ with der:
         if st.button("Vaciar carrito", icon=":material/remove_shopping_cart:", use_container_width=True):
             st.session_state["carrito"] = []
             st.rerun()
-
-if ult := st.session_state.pop("ultima_venta", None):
-    st.toast(f"Venta #{ult['folio']} registrada por {mxn(ult['total'])}", icon=":material/check_circle:")
