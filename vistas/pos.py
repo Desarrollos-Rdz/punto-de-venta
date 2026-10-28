@@ -9,7 +9,7 @@ titulo("point_of_sale", "Vender")
 turno = caja.turno_abierto(u["id"])
 if not turno:
     st.warning("Para vender primero debes abrir tu caja.", icon=":material/lock_open:")
-    st.page_link("pages/caja.py", label="Ir a Caja", icon=":material/payments:")
+    st.page_link("vistas/caja.py", label="Ir a Caja", icon=":material/payments:")
     st.stop()
 
 # ------------------------------------------------------- Ticket de la ultima venta

@@ -10,13 +10,13 @@ aplicar_estilo()
 
 # clave -> (archivo, titulo, icono)
 PAGINAS = {
-    "inicio":        ("pages/inicio.py",        "Inicio",         ":material/home:"),
-    "pos":           ("pages/pos.py",           "Vender",         ":material/point_of_sale:"),
-    "inventario":    ("pages/inventario.py",    "Inventario",     ":material/inventory_2:"),
-    "caja":          ("pages/caja.py",          "Caja",           ":material/payments:"),
-    "reportes":      ("pages/reportes.py",      "Reportes",       ":material/bar_chart:"),
-    "usuarios":      ("pages/usuarios.py",      "Usuarios",       ":material/group:"),
-    "configuracion": ("pages/configuracion.py", "Configuracion",  ":material/settings:"),
+    "inicio":        ("vistas/inicio.py",        "Inicio",         ":material/home:"),
+    "pos":           ("vistas/pos.py",           "Vender",         ":material/point_of_sale:"),
+    "inventario":    ("vistas/inventario.py",    "Inventario",     ":material/inventory_2:"),
+    "caja":          ("vistas/caja.py",          "Caja",           ":material/payments:"),
+    "reportes":      ("vistas/reportes.py",      "Reportes",       ":material/bar_chart:"),
+    "usuarios":      ("vistas/usuarios.py",      "Usuarios",       ":material/group:"),
+    "configuracion": ("vistas/configuracion.py", "Configuracion",  ":material/settings:"),
 }
 
 
