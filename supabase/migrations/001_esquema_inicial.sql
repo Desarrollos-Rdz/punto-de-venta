@@ -167,6 +167,7 @@ create or replace function registrar_venta(
   p_cliente_telefono text default null
 ) returns table (venta_id uuid, folio bigint, total numeric)
 language plpgsql
+set search_path = public
 as $$
 declare
   v_venta_id  uuid;
@@ -258,6 +259,7 @@ create or replace function cancelar_venta(
   p_venta_id uuid, p_usuario_id uuid, p_motivo text
 ) returns void
 language plpgsql
+set search_path = public
 as $$
 declare
   v_item venta_items%rowtype;
@@ -286,7 +288,7 @@ end;
 $$;
 
 -- ---------- Vista: resumen de corte por turno ----------
-create or replace view v_corte_turno as
+create or replace view v_corte_turno with (security_invoker = true) as
 select
   t.id as turno_id,
   t.usuario_id,
@@ -320,4 +322,3 @@ alter table pagos                  enable row level security;
 
 revoke execute on function registrar_venta(uuid, uuid, jsonb, jsonb, numeric, text, text) from public, anon, authenticated;
 revoke execute on function cancelar_venta(uuid, uuid, text) from public, anon, authenticated;
-alter view v_corte_turno set (security_invoker = true);
