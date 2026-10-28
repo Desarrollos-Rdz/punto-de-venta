@@ -12,7 +12,7 @@ Aplicacion web de punto de venta hecha con **Streamlit + Supabase**, pensada par
 | 4 | Ticket en PDF (80 mm) y envio por WhatsApp con enlace wa.me | Listo |
 | 4b | Envio de tickets por correo con Resend | En espera: requiere dominio propio verificado |
 | 5 | Usuarios y roles desde la app, cambio de contrasena, datos de la tienda y zona horaria, reportes (por dia, producto y cajero) en PDF y Excel, cancelacion de ventas | Listo |
-| 6 | Lector de codigo de barras en la pantalla de venta | Pendiente |
+| 6 | Lector de codigo de barras (USB) en Vender: cursor automatico, agrega al escanear, pesos por kilos; codigos internos para productos sin codigo | Listo |
 
 ## Roles
 
@@ -48,3 +48,9 @@ streamlit run app.py
 ## Iconos
 
 La interfaz usa iconos Material de Streamlit (`:material/nombre:`), sin emojis.
+
+## Lector de codigo de barras
+
+Cualquier lector USB funciona como teclado: en **Vender** el cursor ya queda en la casilla de codigo, asi que solo escanea.
+Productos por pieza se agregan solos (escanear de nuevo suma una pieza); productos por peso se seleccionan y el cursor
+pasa a los kilos. En **Inventario** puedes escanear el codigo al crear el producto o generar uno interno (900001...).

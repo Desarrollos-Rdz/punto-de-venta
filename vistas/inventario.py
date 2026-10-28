@@ -112,6 +112,9 @@ with tab_nuevo:
         codigo = c.text_input("Codigo de barras (opcional)", actual.get("codigo_barras") or "",
                               key=f"cb_{sufijo}", icon=":material/barcode_scanner:",
                               help="Con un lector USB basta con hacer clic aqui y escanear.")
+        c.button("Generar codigo interno", icon=":material/auto_awesome:", key=f"gen_{sufijo}",
+                 help="Para productos sin codigo de fabrica: crea uno propio (900001, 900002...)",
+                 on_click=lambda k=f"cb_{sufijo}": st.session_state.__setitem__(k, productos.codigo_interno()))
 
         g1, g2, _ = st.columns([1, 1, 3])
         if g1.button("Guardar", type="primary", icon=":material/save:", key=f"g_{sufijo}"):
@@ -129,7 +132,10 @@ with tab_nuevo:
                     st.toast("Producto guardado", icon=":material/check_circle:")
                     st.rerun()
                 except Exception as e:
-                    st.error(f"No se pudo guardar: {e}")
+                    if "codigo_barras" in str(e) and "duplicate" in str(e).lower():
+                        st.error("Ese codigo de barras ya esta en otro producto.", icon=":material/error:")
+                    else:
+                        st.error(f"No se pudo guardar: {e}")
         if pid and g2.button("Desactivar", icon=":material/delete:", key=f"d_{sufijo}"):
             productos.desactivar_producto(pid)
             st.toast("Producto desactivado", icon=":material/check_circle:")

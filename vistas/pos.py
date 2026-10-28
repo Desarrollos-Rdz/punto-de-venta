@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from modules import auth, caja, productos, tickets, ventas
 from utils.ui import titulo, mxn
 
@@ -59,9 +60,20 @@ def agregar(prod, cantidad: float, precio: float | None = None) -> None:
                     "cantidad": round(cantidad, 3), "precio_unitario": precio})
 
 
+def n() -> int:
+    """Contador que cambia al agregar un producto: reinicia los campos de captura."""
+    return st.session_state.setdefault("pos_n", 0)
+
+
+def listo_para_otro(enfocar: str = "Codigo de barras") -> None:
+    st.session_state["pos_n"] = n() + 1
+    st.session_state["enfocar"] = enfocar
+
+
 def al_escanear() -> None:
     codigo = st.session_state.get("pos_codigo", "").strip()
     st.session_state["pos_codigo"] = ""
+    st.session_state["enfocar"] = "Codigo de barras"
     if not codigo:
         return
     p = ventas.buscar_por_codigo(codigo)
@@ -69,10 +81,18 @@ def al_escanear() -> None:
         st.toast(f"Codigo {codigo} no encontrado", icon=":material/error:")
     elif p["tipo_venta"] == "pieza":
         agregar(p, 1)
-    else:   # por peso: se deja seleccionado para capturar el peso
+        st.toast(f"{p['nombre']} agregado", icon=":material/check:")
+    else:   # por peso: se deja seleccionado y el cursor pasa a la casilla de kilos
         for etiqueta, r in etiquetas.items():
             if r["id"] == p["id"]:
-                st.session_state["pos_sel"] = etiqueta
+                st.session_state["pos_cat"] = "Todas"
+                st.session_state[f"pos_sel_{n()}"] = etiqueta
+                st.session_state["enfocar"] = "Kilos"
+
+
+def agregar_seleccion(p, cant: float) -> None:
+    agregar(p, float(cant))
+    listo_para_otro()
 
 
 izq, der = st.columns([1.15, 1], gap="large")
@@ -80,32 +100,50 @@ izq, der = st.columns([1.15, 1], gap="large")
 # ------------------------------------------------------------ Agregar producto
 with izq:
     st.text_input("Codigo de barras", key="pos_codigo", on_change=al_escanear,
-                  icon=":material/barcode_scanner:", placeholder="Escanea o escribe el codigo y presiona Enter")
-    cat = st.pills("Categoria", ["Todas"] + sorted(df["categoria"].unique()), default="Todas",
-                   label_visibility="collapsed") or "Todas"
+                  icon=":material/barcode_scanner:",
+                  placeholder="Escanea o escribe el codigo y presiona Enter",
+                  help="Con un lector USB solo escanea: el producto se agrega solo. "
+                       "Si es por peso, el cursor pasa a los kilos.")
+    st.session_state.setdefault("pos_cat", "Todas")
+    cat = st.pills("Categoria", ["Todas"] + sorted(df["categoria"].unique()),
+                   key="pos_cat", label_visibility="collapsed") or "Todas"
     opciones = [e for e, r in etiquetas.items() if cat == "Todas" or r["categoria"] == cat]
-    sel = st.selectbox("Producto", opciones, key="pos_sel", index=None,
+    sel = st.selectbox("Producto", opciones, key=f"pos_sel_{n()}", index=None,
                        placeholder="Busca por nombre...")
 
     if sel:
         p = etiquetas[sel]
         st.caption(f"Disponible: {float(p['stock']):g} {p['unidad']}")
         if p["tipo_venta"] == "peso":
-            modo = st.radio("Capturar por", ["Peso (kg)", "Monto ($)"], horizontal=True)
+            modo = st.radio("Capturar por", ["Peso (kg)", "Monto ($)"], horizontal=True, key=f"pos_modo_{n()}")
             if modo == "Peso (kg)":
-                cant = st.number_input("Kilos", min_value=0.0, step=0.05, format="%.3f", key="pos_kg")
+                cant = st.number_input("Kilos", min_value=0.0, step=0.05, format="%.3f", key=f"pos_kg_{n()}")
             else:
-                monto = st.number_input("Cuanto quiere el cliente ($)", min_value=0.0, step=5.0, key="pos_monto")
+                monto = st.number_input("Cuanto quiere el cliente ($)", min_value=0.0, step=5.0,
+                                        key=f"pos_monto_{n()}")
                 cant = round(monto / float(p["precio_venta"]), 3) if p["precio_venta"] else 0.0
                 st.caption(f"Equivale a {cant:.3f} kg")
-            label_btn = "Agregar"
         else:
-            cant = st.number_input("Piezas", min_value=1.0, step=1.0, value=1.0, key="pos_pzas")
-            label_btn = "Agregar"
-        if st.button(label_btn, type="primary", icon=":material/add_shopping_cart:",
-                     disabled=cant <= 0, use_container_width=True):
-            agregar(p, float(cant))
-            st.rerun()
+            cant = st.number_input("Piezas", min_value=1.0, step=1.0, value=1.0, key=f"pos_pzas_{n()}")
+        st.button("Agregar", type="primary", icon=":material/add_shopping_cart:", disabled=cant <= 0,
+                  use_container_width=True, on_click=agregar_seleccion, args=(p, cant))
+
+# Mueve el cursor a la casilla correcta (lector de codigo de barras sin tocar el mouse).
+# Solo al entrar a la pantalla y despues de agregar o escanear, para no estorbar al escribir.
+destino = st.session_state.pop("enfocar", None)
+if destino is None and not st.session_state.get("pos_visitada"):
+    destino = "Codigo de barras"
+st.session_state["pos_visitada"] = True
+if destino:
+    components.html(
+        f"""<script>
+        let intentos = 0;
+        const t = setInterval(() => {{
+          const el = window.parent.document.querySelector('input[aria-label="{destino}"]');
+          if (el) {{ el.focus(); el.select && el.select(); clearInterval(t); }}
+          if (++intentos > 20) clearInterval(t);
+        }}, 100);
+        </script>""", height=0)
 
 # ------------------------------------------------------------------- Carrito
 with der:
@@ -159,6 +197,7 @@ with der:
                 st.session_state["ultima_venta"] = {"venta_id": r["venta_id"], "folio": r["folio"],
                                                     "total": float(r["total"])}
                 st.session_state["carrito"] = []
+                listo_para_otro()
                 st.rerun()
             except Exception as e:
                 st.error(f"No se pudo registrar la venta: {e}", icon=":material/error:")

@@ -83,3 +83,12 @@ def listar_movimientos(limite: int = 200) -> pd.DataFrame:
     df["usuario"] = df["usuarios"].apply(lambda u: u["nombre"] if u else "")
     df["creado_en"] = serie_local(df["creado_en"])
     return df.drop(columns=["productos", "usuarios"])
+
+
+def codigo_interno() -> str:
+    """Siguiente codigo interno de 6 digitos (900001, 900002...) para productos sin codigo de fabrica.
+    Sirve para imprimir etiquetas propias y escanearlas despues."""
+    filas = get_db().table("productos").select("codigo_barras").like("codigo_barras", "9%").execute().data
+    usados = [int(f["codigo_barras"]) for f in filas
+              if f["codigo_barras"] and f["codigo_barras"].isdigit() and len(f["codigo_barras"]) == 6]
+    return str(max(usados) + 1 if usados else 900001)
